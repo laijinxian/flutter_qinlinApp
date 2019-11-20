@@ -25,7 +25,7 @@
  3. [Flutter for Web开发者, 从事前端开发入坑flutter必不可少的文档](https://flutterchina.club/web-analogs/)
  4. [flutter demo学习的差不多就照着上面的例子撸一遍，然后就差不多进入实际开发了](https://codelabs.flutter-io.cn/#codelabs)
 
-##### 项目部分功能介绍：[代码传送门github](https://github.com/laijinxian/flutter_app)
+##### 项目部分功能介绍：
  1.  [下拉刷新，上拉加载 --> flutter_easyrefresh](https://github.com/xuelongqy/flutter_easyrefresh/blob/master/README_EN.md)
  2.  [全局提示，及loading加载 --> bot_toast](https://github.com/MMMzq/bot_toast/blob/master/README_zh.md)
  3.  [列表动画 --> flutter_staggered_animations](https://github.com/mobiten/flutter_staggered_animations)
