@@ -14,7 +14,14 @@ class OpenDoor extends StatefulWidget {
   _OpenDoor createState() => _OpenDoor();
 }
 
+// SingleTickerProviderStateMixin
 class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
+  List<String> images = [
+    'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1572156794767&di=be526a0b54ee46d946d3250a7968a6f7&imgtype=0&src=http%3A%2F%2Fi0.hdslb.com%2Fbfs%2Farticle%2Fbdcfa6f72cf1bbfd324b84f5777e6848b2d2be4e.jpg',
+    'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1572156824160&di=c205e84c76495370233a593da91dcda7&imgtype=0&src=http%3A%2F%2Fn.sinaimg.cn%2Fsinacn10116%2F48%2Fw551h297%2F20190314%2F946d-hufnxfn4009298.jpg',
+    'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1572751557&di=50401b19d4db5efa4168350720ef6ad2&imgtype=jpg&er=1&src=http%3A%2F%2Fpics4.baidu.com%2Ffeed%2Fa50f4bfbfbedab64dee455dd9827d4c779311e2a.png%3Ftoken%3D5134b72012d51c515324de0976a8efdc%26amp%3Bs%3DCB9C578454135FC20494D9DD0300C0B1',
+    'https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1572158959381&di=d35bfaae98371e5188aa793ca4f946c4&imgtype=0&src=http%3A%2F%2Fb-ssl.duitang.com%2Fuploads%2Fitem%2F201811%2F17%2F20181117182732_vkiak.jpg'
+  ];
   Animation<double> animation;
   AnimationController controller;
   bool visible = false;
@@ -23,11 +30,10 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
   Object commonlyUsedDoor = {};
   List doorList = new List();
   List cityList = new List();
+  var controllerView = new ScrollController();
   OverlayEntry plotOverlayEntry;
   DateTime _dateTime;
-  var controllerView = new ScrollController();
 
-  @override
   // 页面初始化
   void initState() {
     super.initState();
@@ -62,7 +68,7 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
   void _getDoorList(communityId) async {
     try {
       var response = await HttpUtil().post(
-          "doorcontrol/v2/queryUserDoor", 'formData',
+          "doorcontrol/v2/queryUserDoor?", 'open', 'formData',  true,
           data: {"communityId": communityId});
       if (response["code"] == 0) {
         setState(() {
@@ -87,9 +93,8 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
   // 开门
   void _onOpenDoor(list) async {
     try {
-      var response = await HttpUtil().post("doorcontrol/v2/open", 'formData',
+      var response = await HttpUtil().post("doorcontrol/v2/open?", 'open', 'formData', true,
           data: {"macAddress": list["macAddress"]});
-      print(response);
       if (response["data"]["openDoorState"] != 1) {
         Future.delayed(Duration(milliseconds: 200), () {
           BotToast.showText(
@@ -103,10 +108,14 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
     }
   }
 
+  @override
   // 页面渲染
   Widget build(BuildContext context) {
     _dateTime = DateTime.now();
     return new Scaffold(
+      appBar: AppBar(
+        title: Text('qinlin App'),
+      ),
       // 下拉刷新组件
       body: EasyRefresh(
         header: ClassicalHeader(
@@ -171,7 +180,7 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
                       ),
                       onTap: () async {
                         var response = await HttpUtil().post(
-                            "auth/v2/getApplyListGroupByCommunity", 'formData',
+                            "auth/v2/getApplyListGroupByCommunity?", 'open', 'formData', true,
                             data: {"communityId": "13"});
                         Future.delayed(Duration(milliseconds: 250), () {
                           if (response["code"] == 0) {
@@ -231,12 +240,14 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
             new Container(
               height: 120.0,
               color: Colors.grey[200],
+              // padding: const EdgeInsets.fromLTRB(30.0, .0, 30.0, .0),
               margin: const EdgeInsets.only(top: 10.0),
               child: new Row(
                 children: <Widget>[
                   new Transform.rotate(
                     angle: math.pi,
                     child: new Image(
+                      // height: 15.0,
                       width: 30.0,
                       fit: BoxFit.fitHeight,
                       image: AssetImage("images/community-more.png"),
@@ -268,7 +279,7 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
                         child: Text.rich(TextSpan(children: [
                           TextSpan(text: '物业电话： '),
                           TextSpan(
-                              text: '0755 - 8208208820',
+                              text: '0755 - 23608113',
                               style: TextStyle(color: Colors.red))
                         ])),
                       ),
@@ -300,7 +311,7 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
         itemBuilder: (BuildContext context, int index) {
           return AnimationConfiguration.staggeredList(
               position: index,
-              duration: const Duration(milliseconds: 215),
+              duration: const Duration(milliseconds: 275),
               child: SlideAnimation(
                 //滑动动画
                 verticalOffset: 50.0,
@@ -328,6 +339,7 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
                     image: AssetImage("images/open-door.png"),
                   ),
                   onPressed: () async {
+                    // controller.reverse();
                     _onOpenDoor(list);
                   },
                 ),
@@ -383,18 +395,18 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
               child: new SafeArea(
                   child: new Material(
                       child: new Container(
-                height: 420.0,
+                height: 320.0,
                 color: Colors.white,
                 child: new Column(
                   children: <Widget>[
                     Expanded(
                       child: ListView.builder(
-                          itemCount: doorList.length,
+                          itemCount: cityList.length,
                           controller: controllerView,
                           itemBuilder: (BuildContext context, int index) {
                             return AnimationConfiguration.staggeredList(
                                 position: index,
-                                duration: const Duration(milliseconds: 215),
+                                duration: const Duration(milliseconds: 275),
                                 child: SlideAnimation(
                                   //滑动动画
                                   verticalOffset: 50.0,
@@ -402,15 +414,20 @@ class _OpenDoor extends State<OpenDoor> with TickerProviderStateMixin {
                                     //渐隐渐现动画
                                     child: Container(
                                         decoration: BoxDecoration(
-                                            border: Border(bottom: BorderSide(width: 1, color: Color(0xffe5e5e5)))),
+                                            border: Border(
+                                                bottom: BorderSide(
+                                                    width: 1,
+                                                    color: Color(0xffe5e5e5)))),
                                         child: ListTile(
-                                          title: new Text('Flutter app'),
+                                          title: new Text(
+                                              cityList[index]["communityName"]),
                                           trailing: new Icon(
                                             Icons.favorite,
                                             color: Colors.red,
                                           ),
                                           onTap: () {
-                                            _getDoorList(cityList[index]["communityId"]);
+                                            _getDoorList(
+                                                cityList[index]["communityId"]);
                                             plotOverlayEntry.remove();
                                           },
                                         )),

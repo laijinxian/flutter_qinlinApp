@@ -1,21 +1,41 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/rendering.dart';
-import './ShowLoading.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import './Loading.dart';
+import '../main.dart';
 
 class HttpUtil {
   static HttpUtil instance;
-  final String sesstion = 'h5:402880ae6e83b238016e83b251d00001'; // sesstionId 接口凭证 正式开发应由通过登录获取并存储起来
+  final String openApi = 'https://mobileapi.qinlinkeji.com/api/';
+  final String mobileApi = 'https:///openapi.qinlinkeji.com/api/';
+  String sessionId; // sessionId
   Dio dio;
   BaseOptions options;
 
   CancelToken cancelToken = new CancelToken();
 
-  static HttpUtil getInstance() {
+  static Future<HttpUtil> getInstance() async  {
     if (null == instance) instance = new HttpUtil();
+    // 初始化本地存储能力
     return instance;
+  }
+
+  // 获取本地存储的sessionId
+  Future<dynamic> getSessionId () async {
+    Future<dynamic> future = Future(() async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      return json.decode(prefs.getString("sessionId"));
+    });
+    await future.then((value) {
+      sessionId = value ?? null;
+    });
+    return sessionId; 
   }
 
   /*
@@ -25,7 +45,7 @@ class HttpUtil {
     //BaseOptions、Options、RequestOptions 都可以配置参数，优先级别依次递增，且可以根据优先级别覆盖参数
     options = new BaseOptions(
       //请求基地址,可以包含子路径
-      baseUrl: "https://uat-mobileapi.qinlinkeji.com/api/",
+      baseUrl: openApi,
       //连接服务器超时时间，单位是毫秒.
       connectTimeout: 10000,
       //响应流上前后两次接受到数据的间隔，单位为毫秒。
@@ -59,16 +79,20 @@ class HttpUtil {
       cancel = BotToast.showCustomLoading(
         ignoreContentClick: true,
         toastBuilder: (cancelFunc) {
-          return ShowLoading();
+          return Loading();
         }
       );
       return options;
     }, onResponse: (Response response) { // 请求成功
       // Do something with response data
       // 关闭其他弹窗 2个都可以
-      Future.delayed(Duration(milliseconds: 200), (){
+      Future.delayed(Duration(milliseconds: 100), (){
         cancel();
-        if (response.data['code'] != 0) {  
+        print(response.data['code']);
+        if (response.data['code'] == 401) {
+           // sessionId 过期 跳转登录
+          Router.navigatorKey.currentState.pushNamed("login");
+        } else if (response.data['code'] != 0) {
           // 抛出错误      
           BotToast.showText(
             text: response.data["message"], 
@@ -80,7 +104,6 @@ class HttpUtil {
         return response;
       });
       // BotToast.closeAllLoading();
-     
     }, onError: (DioError e) { // 请求错误
       // Do something with response error
       Future.delayed(Duration(milliseconds: 200), (){  // 关闭其他弹窗
@@ -111,11 +134,11 @@ class HttpUtil {
   get(url, {params, options, cancelToken}) async {
     Response response;
     try {
+      response = await dio.get(url, queryParameters: params, options: options, cancelToken: cancelToken);
       //  response.data; 响应体
       //  response.headers; 响应头
       //  response.request; 请求体
       //  response.statusCode; 状态码
-      response = await dio.get(url, queryParameters: params, options: options, cancelToken: cancelToken);
     } on DioError catch (e) {
       formatError(e);
     }
@@ -125,21 +148,53 @@ class HttpUtil {
   /*
    * post请求
    * @path 去除前缀和 sessionId 的路劲参数
+   * @urlType 前缀类型 moblie --> mobileApi | open --> openApi
    * @type 什么格式 JSON 还是 formData
+   * @isData 是否有body参数
    * @data 请求体body
    * @options 该请求单独的 options 配置， 会覆盖全局的 options， 无特殊情况不用传
    * @cancelToken 该请求的标识，可用于取消该请求
    */
-  post(path, type, {data, options, cancelToken}) async {
+  post(path, urlType, type, isData, {data, options, cancelToken}) async {
+    // Future<dynamic> future = Future(() async {
+    //   SharedPreferences prefs = await SharedPreferences.getInstance();
+    //   return json.decode(prefs.getString("sessionId"));
+    // });
+    // await future.then((value) {
+    //   sessionId = value ?? null;
+    // });
     // 添加sessionId
-    var url = '$path?sessionId=$sesstion';
+    await getSessionId();
+    var url = sessionId == null ? path : '${path}sessionId=$sessionId';
+    // print(sessionId.trim().isNotEmpty);
     Response response;
+    FormData formData;
     // formData 格式转换
-    FormData formData = FormData.from(data);
+    if (isData) formData = FormData.from(data);
     try {
-      response = await dio.post(url, data: type == 'formData' ? formData : data, options: options, cancelToken: cancelToken);
+      isData 
+      ? response = await dio.post(url, data: type == 'formData' ? formData : data, options: urlType == 'mobile' ?  RequestOptions(baseUrl: mobileApi) : options, cancelToken: cancelToken)
+      : response = await dio.post(url, options: urlType == 'mobile' ? RequestOptions(baseUrl: mobileApi) : options, cancelToken: cancelToken);
+      print(response);
     } on DioError catch (e) {
-      print('post error---------$e');
+      formatError(e);
+    }
+    return response.data;
+  }
+
+  /*
+   * 下载文件
+   */
+  downloadFile(urlPath, savePath) async {
+    Response response;
+    try {
+      response = await dio.download(urlPath, savePath,onReceiveProgress: (int count, int total){
+        //进度
+        print("$count $total");
+      });
+      print('downloadFile success---------${response.data}');
+    } on DioError catch (e) {
+      print('downloadFile error---------$e');
       formatError(e);
     }
     return response.data;
@@ -172,6 +227,7 @@ class HttpUtil {
 
   /*
    * 取消请求 
+   *
    * 同一个cancel token 可以用于多个请求，当一个cancel token取消时，所有使用该cancel token的请求都会被取消。
    * 所以参数可选
    */
@@ -179,4 +235,3 @@ class HttpUtil {
     token.cancel("cancelled");
   }
 }
-

@@ -5,21 +5,28 @@ import 'package:flutter/material.dart';
 import 'package:bot_toast/bot_toast.dart';
 
 import 'widgets/OpenDoor.dart';
+import 'widgets/Login.dart';
 
 void main() => runApp(new MyApp());
+
+class Router {
+  static GlobalKey<NavigatorState> navigatorKey = GlobalKey();
+}
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BotToastInit(
       child:MaterialApp(
+         navigatorKey: Router.navigatorKey, 
           navigatorObservers: [BotToastNavigatorObserver()],
           home: MyHomePage(),
           theme: new ThemeData(
             primarySwatch: Colors.red,
           ),
           routes: {
-            'OpenDoor': (context) => OpenDoor()
+            'login': (context) => Login(),
+            'openDoor': (context) => OpenDoor()
           }
       )
     );
@@ -37,9 +44,6 @@ class _MyHomePage extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('qinlin App'),
-      ),
       body: OpenDoor(),
     );
   }
