@@ -34,7 +34,7 @@
  2.  [全局提示，及loading加载 --> bot_toast](https://github.com/MMMzq/bot_toast/blob/master/README_zh.md)
  3.  [列表动画 --> flutter_staggered_animations](https://github.com/mobiten/flutter_staggered_animations)
  4.  [Dio请求封装（请求拦截，接口前缀、token统一添加、请求体格式转换、响应拦截](https://github.com/flutterchina/dio)
- 5.  [登录重置token、token缓存、token过期、获取获取验证、验证码倒计时]
+ 5.  登录重置token、token缓存、token过期、获取获取验证、验证码倒计时
  
 ##### 功能部分组成
 ![](https://user-gold-cdn.xitu.io/2019/11/23/16e96560d14950f1?w=200&h=414&f=gif&s=847548)
